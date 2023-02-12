@@ -1,17 +1,18 @@
+import direct.task.Task
 from panda3d.core import loadPrcFile
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import GeomVertexFormat, GeomVertexData, GeomVertexWriter, \
                          GeomTriangles, Geom, GeomNode, GeomLinestrips
 from panda3d.core import NodePath
+from panda3d.core import Vec3
+from panda3d.physics import ParticleSystem, BaseParticleEmitter, BaseParticleRenderer, BaseParticleFactory
+from direct.task import Task
 import numpy as np
 
 # load config file
 loadPrcFile("config/conf.prc")
 
 class MyGame(ShowBase):
-    def __init__(self):
-        super().__init__()
-
     def createBlackHole(self):
         # create a GeomVertexData object
         vertex_data = GeomVertexData('sphere', GeomVertexFormat().getV3n3c4(), Geom.UHDynamic)
@@ -69,6 +70,11 @@ class MyGame(ShowBase):
         sphereNodePath.setPos(0,30,0)
         sphereNodePath.setColor(r=0, g=0, b=0, a=1)
         sphereNodePath.reparentTo(self.render)
+        return sphereNodePath
+
+    def updateBlackHole(self, path, task):
+        path.setHpr(Vec3(task.time*50))
+        return Task.cont
 
     def createPhotonRing(self):
         vertex_data = GeomVertexData('circle', GeomVertexFormat().getV3c4(), Geom.UHDynamic)
@@ -113,6 +119,11 @@ class MyGame(ShowBase):
         circleNodePath.reparentTo(self.render)
 
     def createParticleSystem(self):
+        particle_system = ParticleSystem()
+        # get emitter
+        emitter = particle_system.getEmitter()
+        emitter.setAmplitude(2)
+        particle_system.setBirthRate(0.5)
         pass
 
     def setBackGroundColor(self):
@@ -124,8 +135,13 @@ class MyGame(ShowBase):
         box = self.loader.loadModel("models/box")
         box.setPos(0,10,0)
         box.reparentTo(self.render)
+    def __init__(self):
+        super().__init__()
+        # add tasks
+        self.taskMgr.add(self.updateBlackHole, "RotateBlackHole", extraArgs=[self.createBlackHole()], appendTask=True)
 
 inst1 = MyGame()
 inst1.createBlackHole()
 inst1.createPhotonRing()
+inst1.createParticleSystem()
 inst1.run()
