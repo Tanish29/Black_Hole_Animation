@@ -1,12 +1,13 @@
-import direct.task.Task
 from panda3d.core import loadPrcFile
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import GeomVertexFormat, GeomVertexData, GeomVertexWriter, \
                          GeomTriangles, Geom, GeomNode, GeomLinestrips
 from panda3d.core import NodePath
-from panda3d.core import Vec3
-from panda3d.physics import ParticleSystem, BaseParticleEmitter, BaseParticleRenderer, BaseParticleFactory
+from panda3d.core import Vec3, LPoint3, LColor
+from panda3d.physics import ParticleSystem, BaseParticleFactory, PointParticleFactory, BaseParticleEmitter, PointEmitter, \
+                            PointParticleRenderer, BaseParticleRenderer, ParticleSystemManager, PhysicalNode
 from direct.task import Task
+from direct.particles.ParticleEffect import ParticleEffect
 import numpy as np
 
 # load config file
@@ -119,11 +120,38 @@ class MyGame(ShowBase):
         circleNodePath.reparentTo(self.render)
 
     def createParticleSystem(self):
-        particle_system = ParticleSystem()
-        # get emitter
-        emitter = particle_system.getEmitter()
-        emitter.setAmplitude(2)
-        particle_system.setBirthRate(0.5)
+        # get system
+        particle_system = ParticleSystem(pool_size=1000)
+        particle_system.setPoolSize(1000)
+        particle_system.setBirthRate(50)
+        particle_system.setLitterSize(10)
+        # particle_system.setLocalVelocityFlag(True)
+        # get factory
+        particle_factory = PointParticleFactory()
+        # particle_factory.setLifespanBase(5.0)
+        # particle_factory.setMassBase(1.0)
+        # particle_factory.setTerminalVelocityBase(100.0)
+        particle_system.setFactory(particle_factory)
+        # # get emitter
+        particle_emitter = PointEmitter()
+        # particle_emitter.setLocation(LPoint3(0,30,0))
+        # particle_emitter.setEmissionType(1)
+        # particle_emitter.setRadiateOrigin(LPoint3(0,30,0))
+        # particle_emitter.setAmplitude(8.0)
+        particle_system.setEmitter(particle_emitter)
+        # get renderer
+        particle_render = PointParticleRenderer()
+        # particle_render.setAlphaMode(1)
+        # particle_render.setPointSize(5.0)
+        # particle_render.setStartColor(LColor(135,65,255,1))
+        particle_system.setRenderer(particle_render)
+
+        # render
+        test = PhysicalNode('particles')
+        test.addPhysical(particle_system)
+        test2 = NodePath(test)
+        test2.reparentTo(self.render)
+
         pass
 
     def setBackGroundColor(self):
@@ -135,13 +163,14 @@ class MyGame(ShowBase):
         box = self.loader.loadModel("models/box")
         box.setPos(0,10,0)
         box.reparentTo(self.render)
+
     def __init__(self):
         super().__init__()
         # add tasks
-        self.taskMgr.add(self.updateBlackHole, "RotateBlackHole", extraArgs=[self.createBlackHole()], appendTask=True)
+        # self.taskMgr.add(self.updateBlackHole, "RotateBlackHole", extraArgs=[self.createBlackHole()], appendTask=True)
+        # add particle system
 
 inst1 = MyGame()
-inst1.createBlackHole()
-inst1.createPhotonRing()
-inst1.createParticleSystem()
+# inst1.createPhotonRing()
+# inst1.createParticleSystem()
 inst1.run()
