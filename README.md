@@ -1,2 +1,2 @@
 # BlackHole-Python
-Black Hole animation in python using ursina
+Black Hole animation in python using panda3d
