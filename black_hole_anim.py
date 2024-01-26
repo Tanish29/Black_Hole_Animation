@@ -5,14 +5,19 @@ from panda3d.core import GeomVertexFormat, GeomVertexData, GeomVertexWriter, \
                          GeomTriangles, Geom, GeomNode, GeomLinestrips
 from panda3d.core import NodePath
 from panda3d.core import LPoint3, LColor, LVector3, LVector4
-from panda3d.physics import ParticleSystem, PointParticleFactory, PointEmitter, BaseParticleEmitter, \
-                            PointParticleRenderer, ParticleSystemManager, GeomParticleRenderer, BaseParticleRenderer, PhysicalNode
+
 from direct.particles.Particles import Particles
 from direct.particles.ParticleEffect import ParticleEffect
 
 from direct.particles.ForceGroup import ForceGroup
-from panda3d.physics import LinearNoiseForce, DiscEmitter, Physical
+from panda3d.physics import LinearSinkForce, AngularVectorForce
+from panda3d.core import TextNode
+from direct.gui.OnscreenText import OnscreenText
 
+HELP_TEXT = """
++ : Increase pool size
+- : Decrease pool size
+"""
 
 # load config file
 loadPrcFile("config/conf.prc")
@@ -27,26 +32,53 @@ class MyGame(ShowBase):
     def __init__(self):
         super().__init__()
         # attributes
-        self.bh_rad = 5
-        self.photon_rad = 5.1
-        self.adisk_rad = 6
+        self.bh_rad = 7
+        self.photon_rad = 7.1
+        self.adisk_rad = 8
 
-        self.setBackGroundColor()
+        self.photon_thickness = 3
+        self.position = LPoint3(0,0,0)
+
+        # start
+        self.setBackGroundColor("images/stars.jpg")
         # create basic aspects (singularity/shadow and ring)
         self.createBlackHole()
         self.createPhotonRing()
         # enable particles
         base.enableParticles()
-        self.createParticleSystem()
+        self.pe = ParticleEffect()
+        self.pool_size = 10000
+        self.accreationDiskZ("acc disk")
+        self.accreationDiskY("top acc disk")
 
-        # some function may need to be ran in parallel so need to create task chains
-        # self.createTaskChains()
+        # self.accept('+',self.increasePoolSize)
+        # self.accept('-',self.decreasePoolSize)
+
+        self.events = OnscreenText(
+            text=HELP_TEXT, parent=base.a2dTopLeft,
+            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.06),
+            align=TextNode.ALeft, scale=.05)
+
+        # some function may need to be run in parallel so need to create task chains
         # add tasks or updates
-        # self.taskMgr.add(funcOrTask=self.spinHole, name="spinHoleTask", taskChain='spinHoleChain',
-        #                  extraArgs=[hole_path], appendTask=True)
+        self.taskMgr.add(funcOrTask=self.spinHole, name="spinHoleTask", taskChain=self.createTaskChains("spinHole"))
+        # self.taskMgr.add(funcOrTask=self.spinCamera, name='spinCamera', taskChain=self.createTaskChains("spinCamera"))
 
-    def createTaskChains(self):
-        self.taskMgr.setupTaskChain(chainName='spinHoleChain', numThreads=1)
+    def createTaskChains(self, name) -> str:
+        self.taskMgr.setupTaskChain(chainName=f'{name}Chain', numThreads=1)
+        return name
+
+    def setBackGroundColor(self, name):
+        # set background color
+        # bg_img = OnscreenImage()
+        # bg_img.setImage(image=name,parent=self.render)
+        self.setBackgroundColor(0,0,0,1)
+
+    def loadModel(self, name):
+        # load a model
+        box = self.loader.loadModel(name)
+        box.setPos(0,0,0)
+        box.reparentTo(self.render)
 
     def createBlackHole(self):
         # create a GeomVertexData object
@@ -102,7 +134,7 @@ class MyGame(ShowBase):
 
         # create a node path and put it in scene graph
         HoleNodePath = NodePath(HoleNode)
-        HoleNodePath.setPos(0,30,0)
+        HoleNodePath.setPos(self.position)
         HoleNodePath.setColor(r=0, g=0, b=0, a=1)
         HoleNodePath.reparentTo(self.render)
         self.HoleNodePath = HoleNodePath
@@ -144,44 +176,37 @@ class MyGame(ShowBase):
 
         # create a node path to store geom node
         circleNodePath = NodePath(circleNode)
-        circleNodePath.setPos(0,30,0)
-        circleNodePath.setColor(r=0.99, g=0.39, b=0, a=1)
-        circleNodePath.setRenderModeThickness(4)
+        circleNodePath.setPos(self.position)
+        circleNodePath.setColor(r=0.99,g=0.39,b=0,a=1)
+        circleNodePath.setRenderModeThickness(self.photon_thickness)
         circleNodePath.reparentTo(self.render)
 
         self.circleNodePath = circleNodePath
 
-    def createParticleSystem(self):
-        # particle effect system
-        pe = ParticleEffect()
-
+    def accreationDiskZ(self,name):
         # Particles
-        p = Particles("event horizon")
+        p = Particles(f"{name} particles")
         # max number of particles
-        p.setPoolSize(100000)
+        p.setPoolSize(self.pool_size)
         # time (s) between each particle birth
-        p.setBirthRate(0.001)
+        p.setBirthRate(1e-5)
         # num particles created at birth
-        p.setLitterSize(50000)
+        p.setLitterSize(10000)
         # variation in litter birth
-        p.setLitterSpread(20000)
+        p.setLitterSpread(1)
         p.setSystemGrowsOlderFlag(False)
-        # only if system grows older
-        # p.setSystemLifespan(10.0)
-        # p.setActiveSystemFlag(True)
         # whether velocities are absolute or not
         p.setLocalVelocityFlag(False)
 
         # factory - child of baseParticleFactory
         # parent parameters
-        p.setFactory("ZSpinParticleFactory")
-        p.factory.setLifespanBase(5.0)
-        p.factory.setLifespanSpread(2.0)
-        p.factory.setTerminalVelocityBase(10.0)
-        p.factory.setTerminalVelocitySpread(3.0)
-        # child parameters
-        p.factory.setInitialAngle(0.0)
-        p.factory.setFinalAngle(0.0)
+        p.setFactory("PointParticleFactory")
+        p.factory.setLifespanBase(3.0)
+        p.factory.setLifespanSpread(1.0)
+        p.factory.setTerminalVelocityBase(12)
+        p.factory.setTerminalVelocitySpread(1)
+        p.factory.setMassBase(1)
+        p.factory.setMassSpread(0.25)
 
         # emitter - child of baseParticleEmitter
         p.setEmitter("TangentRingEmitter")
@@ -189,27 +214,31 @@ class MyGame(ShowBase):
         p.emitter.setEmissionType(p.emitter.ET_CUSTOM)
         # p.emitter.setExplicitLaunchVector(LVector3(0, 0, 1))
         # p.emitter.setRadiateOrigin(LPoint3(0, 0, 0))
-        p.emitter.setAmplitude(2.0)
+        p.emitter.setAmplitude(10)
         p.emitter.setAmplitudeSpread(1.0)
         # child parameters
         p.emitter.setRadius(self.adisk_rad)
 
         # renderer - child of baseParticleRenderer
-        p.setRenderer("PointParticleRenderer")
+        p.setRenderer("LineParticleRenderer")
         # parent parameters
         p.renderer.setAlphaMode(p.renderer.PR_ALPHA_OUT)
-        # p.renderer.setUserAlpha(1)
         # child parameters
-        # sprite renderer
-        # p.renderer.setTexture(loader.loadTexture('photon.png'))
-        # p.renderer.setColor(LColor(255,255,255,1))
+        # sprite particle renderer
+        # p.renderer.setTexture(loader.loadTexture('images/photon.png'))
+        # # p.renderer.setColor(LColor(0.99,0.39,0,1))
         # p.renderer.setXScaleFlag(True)
         # p.renderer.setYScaleFlag(True)
         # p.renderer.setAnimAngleFlag(True)
-        # p.renderer.setInitialXScale(1e-4)
-        # p.renderer.setFinalXScale(5e-7)
+        # # the y axis is scaled more to make particles look like horizontal rays
+        # p.renderer.setInitialXScale(1e-3)
+        # p.renderer.setFinalXScale(1e-4)
         # p.renderer.setInitialYScale(1e-4)
-        # p.renderer.setFinalYScale(5e-7)
+        # p.renderer.setFinalYScale(1e-5)
+
+        # line particle renderer
+        p.renderer.setHeadColor(LColor(0.99,0.39,0,1))
+        p.renderer.setTailColor(LColor(0.99,0.39,0,1))
 
         # sparkle particle renderers
         # p.renderer.setCenterColor(LColor(0.99,0.39,0,1))
@@ -219,36 +248,148 @@ class MyGame(ShowBase):
         # p.renderer.setLifeScale(p.renderer.SP_SCALE)
 
         # point particle renderer
-        p.renderer.setPointSize(100.0)
-        p.renderer.setStartColor(LColor(0.99,0.39,0, 1))
-        p.renderer.setEndColor(LColor(0, 0, 0, 1))
-        p.renderer.setBlendType(p.renderer.PP_BLEND_VEL)
-        p.renderer.setBlendMethod(BaseParticleRenderer.PP_BLEND_CUBIC)
+        # p.renderer.setPointSize(100.0)
+        # p.renderer.setStartColor(LColor(0.99,0.39,0, 1))
+        # p.renderer.setEndColor(LColor(0.99,0.39, 0, 1))
+        # p.renderer.setBlendType(p.renderer.PP_BLEND_VEL)
+        # p.renderer.setBlendMethod(p.renderer.PP_BLEND_CUBIC)
 
-        fg = ForceGroup('vertex')
-        # Force parameters
-        force = LinearNoiseForce(0.1500, 0)
+        # forces
+        fg = ForceGroup(f'{name} forces')
+        # gravitational force
+        force = LinearSinkForce()
+        force.setFalloffType(force.FT_ONE_OVER_R_SQUARED)
+        force.setForceCenter(self.position)
+        force.setRadius(self.adisk_rad-1)
+        force.setMassDependent(True)
+        force.setAmplitude(55)
+        force.setActive(1)
+
         force.setActive(1)
         fg.addForce(force)
 
-        # pe.addForceGroup(fg)
+        # particle effect system
+        pe = ParticleEffect(f"{name} particle effect")
+        pe.addForceGroup(fg)
         pe.addParticles(p)
         pe.start(self.render)
-        pe.setPos(0,30,0)
+        pe.setPos(self.position)
 
 
-    def setBackGroundColor(self):
-        # set background color
-        self.setBackgroundColor(0,0,0)
+    def accreationDiskY(self,name):
+        # Particles
+        p = Particles(f"{name} particles")
+        # max number of particles
+        p.setPoolSize(self.pool_size + 10000)
+        # time (s) between each particle birth
+        p.setBirthRate(1e-4)
+        # num particles created at birth
+        p.setLitterSize(10000)
+        # variation in litter birth
+        p.setLitterSpread(1)
+        p.setSystemGrowsOlderFlag(False)
+        # whether velocities are absolute or not
+        p.setLocalVelocityFlag(False)
 
-    def loadModel(self):
-        # load a model
-        box = self.loader.loadModel("models/box")
-        box.setPos(0,10,0)
-        box.reparentTo(self.render)
+        # factory - child of baseParticleFactory
+        # parent parameters
+        p.setFactory("PointParticleFactory")
+        p.factory.setLifespanBase(2)
+        p.factory.setLifespanSpread(1)
+        p.factory.setTerminalVelocityBase(12)
+        p.factory.setTerminalVelocitySpread(1)
+        p.factory.setMassBase(1)
+        p.factory.setMassSpread(0.25)
+
+        # emitter - child of baseParticleEmitter
+        p.setEmitter("TangentRingEmitter")
+        # parent parameters
+        p.emitter.setEmissionType(p.emitter.ET_CUSTOM)
+        # p.emitter.setExplicitLaunchVector(LVector3(0, 0, 1))
+        # p.emitter.setRadiateOrigin(LPoint3(0, 0, 0))
+        p.emitter.setAmplitude(10)
+        p.emitter.setAmplitudeSpread(1)
+        # child parameters
+        p.emitter.setRadius(self.adisk_rad)
+
+        # renderer - child of baseParticleRenderer
+        p.setRenderer("LineParticleRenderer")
+        # parent parameters
+        p.renderer.setAlphaMode(p.renderer.PR_ALPHA_OUT)
+        # child parameters
+        # sprite particle renderer
+        # p.renderer.setTexture(loader.loadTexture('images/photon.png'))
+        # # p.renderer.setColor(LColor(0.99,0.39,0,1))
+        # p.renderer.setXScaleFlag(True)
+        # p.renderer.setYScaleFlag(True)
+        # p.renderer.setAnimAngleFlag(True)
+        # # the y axis is scaled more to make particles look like horizontal rays
+        # p.renderer.setInitialXScale(1e-4)
+        # p.renderer.setFinalXScale(1e-5)
+        # p.renderer.setInitialYScale(1e-3)
+        # p.renderer.setFinalYScale(1e-4)
+
+        # line particle renderer
+        p.renderer.setHeadColor(LColor(0.99,0.39,0,1))
+        p.renderer.setTailColor(LColor(0.99,0.39,0,1))
+
+        # sparkle particle renderers
+        # p.renderer.setCenterColor(LColor(0.99,0.39,0,1))
+        # p.renderer.setEdgeColor(LColor(0,0,0,1))
+        # p.renderer.setBirthRadius(0.005)
+        # p.renderer.setDeathRadius(0.001)
+        # p.renderer.setLifeScale(p.renderer.SP_SCALE)
+
+        # point particle renderer
+        # p.renderer.setPointSize(100.0)
+        # p.renderer.setStartColor(LColor(0.99,0.39,0, 1))
+        # p.renderer.setEndColor(LColor(0.99,0.39, 0, 1))
+        # p.renderer.setBlendType(p.renderer.PP_BLEND_VEL)
+        # p.renderer.setBlendMethod(p.renderer.PP_BLEND_CUBIC)
+
+        # forces
+        fg = ForceGroup(f'{name} forces')
+        # gravitational force
+        force = LinearSinkForce()
+        force.setFalloffType(force.FT_ONE_OVER_R_SQUARED)
+        force.setForceCenter(self.position)
+        force.setRadius(self.adisk_rad-1)
+        force.setMassDependent(True)
+        force.setAmplitude(55)
+        force.setActive(1)
+
+        force.setActive(1)
+        fg.addForce(force)
+
+        # particle effect system
+        pe = ParticleEffect(f"{name} particle effect")
+        pe.addForceGroup(fg)
+        pe.addParticles(p)
+        pe.start(self.render)
+        pe.setPos(self.position)
+        pe.setP(90)
+
+
+    # def increasePoolSize(self):
+    #     self.pool_size += 1000
+    #     print(f"Pool Size = {self.pool_size}")
+    #     self.createParticleSystem()
+
+    # def decreasePoolSize(self):
+    #     dec = 1000
+    #     if self.pool_size <= 1000:
+    #         dec = 100
+    #     self.pool_size -= dec
+    #     print(f"Pool Size = {self.pool_size}")
+    #     self.createParticleSystem()
 
     # -- Update functions/tasks --
-    def spinHole(self, path:NodePath, task):
+    def spinCamera(self,task):
+        pass
+
+    def spinHole(self, task):
         # rotate hole smoothly
-        path.setHpr(0, 0, path.getR()-1e-3)
+        self.HoleNodePath.setR(self.HoleNodePath.getR()+10)
+        print(f"R = {self.HoleNodePath.getR()}")
         return task.cont
+
