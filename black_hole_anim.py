@@ -10,9 +10,10 @@ from direct.particles.Particles import Particles
 from direct.particles.ParticleEffect import ParticleEffect
 
 from direct.particles.ForceGroup import ForceGroup
-from panda3d.physics import LinearSinkForce, AngularVectorForce
-from panda3d.core import TextNode
+from panda3d.physics import LinearSinkForce, LinearVectorForce
+from panda3d.core import TextNode, CardMaker
 from direct.gui.OnscreenText import OnscreenText
+from panda3d.core import TransparencyAttrib
 
 HELP_TEXT = """
 + : Increase pool size
@@ -32,24 +33,33 @@ class MyGame(ShowBase):
     def __init__(self):
         super().__init__()
         # attributes
-        self.bh_rad = 7
-        self.photon_rad = 7.1
-        self.adisk_rad = 8
+        self.bh_rad = 5
+        self.photon_rad = 5.1
+        self.adisk_rad = 6
 
         self.photon_thickness = 3
-        self.position = LPoint3(0,0,0)
+        self.position = LPoint3(30,0,0)
+        self.pool_size = 1000
+        self.pe = ParticleEffect()
 
-        # start
+        # background
         self.setBackGroundColor("images/stars.jpg")
         # create basic aspects (singularity/shadow and ring)
         self.createBlackHole()
         self.createPhotonRing()
-        # enable particles
+
+        # particle systems
         base.enableParticles()
-        self.pe = ParticleEffect()
-        self.pool_size = 10000
         self.accreationDiskZ("acc disk")
-        self.accreationDiskY("top acc disk")
+        # self.accreationDiskY("top acc disk")
+        self.starParticles("star")
+
+        # star
+        self.loadStar("images/sun_with_2k_textures/scene.gltf")
+
+        # camera
+        # self.disableMouse()
+        self.useDrive()
 
         # self.accept('+',self.increasePoolSize)
         # self.accept('-',self.decreasePoolSize)
@@ -61,7 +71,11 @@ class MyGame(ShowBase):
 
         # some function may need to be run in parallel so need to create task chains
         # add tasks or updates
-        self.taskMgr.add(funcOrTask=self.spinHole, name="spinHoleTask", taskChain=self.createTaskChains("spinHole"))
+        # self.taskMgr.add(funcOrTask=self.spinHole, name="spinHoleTask", taskChain=self.createTaskChains("spinHole"))
+        self.taskMgr.add(funcOrTask=self.spinStar, name="spinStar", taskChain=self.createTaskChains("spinStar"))
+        # self.taskMgr.doMethodLater(delayTime=2,funcOrTask=self.addHoleMass, name="addHoleMass",
+        #                            taskChain=self.createTaskChains("addHoleMass"), extraArgs=["acc disk particles"],
+        #                            appendTask=True)
         # self.taskMgr.add(funcOrTask=self.spinCamera, name='spinCamera', taskChain=self.createTaskChains("spinCamera"))
 
     def createTaskChains(self, name) -> str:
@@ -70,15 +84,21 @@ class MyGame(ShowBase):
 
     def setBackGroundColor(self, name):
         # set background color
-        # bg_img = OnscreenImage()
-        # bg_img.setImage(image=name,parent=self.render)
+        # cm = CardMaker("card")
+        # cm.setFrameFullscreenQuad()
+        # card = self.render2d.attachNewNode(cm.generate())
+        # tex = self.loader.loadTexture(name)
+        # card.setTexture(tex)
+
         self.setBackgroundColor(0,0,0,1)
 
-    def loadModel(self, name):
-        # load a model
-        box = self.loader.loadModel(name)
-        box.setPos(0,0,0)
-        box.reparentTo(self.render)
+    def loadStar(self, name):
+        # Ref: https://sketchfab.com/3d-models/sun-with-2k-textures-bac9e8f95040484bb86f1deb9bd6fe95 by ayushcodemate
+        star = self.loader.loadModel(name)
+        star.setPos(-20,-10,-8)
+        star.setScale(LVector3(30,30,30))
+        star.reparentTo(self.render)
+        self.starNode = star
 
     def createBlackHole(self):
         # create a GeomVertexData object
@@ -184,6 +204,8 @@ class MyGame(ShowBase):
         self.circleNodePath = circleNodePath
 
     def accreationDiskZ(self,name):
+        self.pe.cleanup()
+
         # Particles
         p = Particles(f"{name} particles")
         # max number of particles
@@ -259,7 +281,7 @@ class MyGame(ShowBase):
         # gravitational force
         force = LinearSinkForce()
         force.setFalloffType(force.FT_ONE_OVER_R_SQUARED)
-        force.setForceCenter(self.position)
+        force.setForceCenter(LPoint3(0,0,0))
         force.setRadius(self.adisk_rad-1)
         force.setMassDependent(True)
         force.setAmplitude(55)
@@ -269,11 +291,11 @@ class MyGame(ShowBase):
         fg.addForce(force)
 
         # particle effect system
-        pe = ParticleEffect(f"{name} particle effect")
-        pe.addForceGroup(fg)
-        pe.addParticles(p)
-        pe.start(self.render)
-        pe.setPos(self.position)
+        self.pe = ParticleEffect(f"{name} particle effect")
+        self.pe.addForceGroup(fg)
+        self.pe.addParticles(p)
+        self.pe.start(self.render)
+        self.pe.setPos(self.position)
 
 
     def accreationDiskY(self,name):
@@ -369,6 +391,99 @@ class MyGame(ShowBase):
         pe.setPos(self.position)
         pe.setP(90)
 
+    def starParticles(self, name):
+        # Particles
+        p = Particles(f"{name} particles")
+        # max number of particles
+        p.setPoolSize(20000)
+        # time (s) between each particle birth
+        p.setBirthRate(1e-5)
+        # num particles created at birth
+        p.setLitterSize(10000)
+        # variation in litter birth
+        p.setLitterSpread(1)
+        p.setSystemGrowsOlderFlag(False)
+        # whether velocities are absolute or not
+        p.setLocalVelocityFlag(False)
+
+        # factory - child of baseParticleFactory
+        # parent parameters
+        p.setFactory("PointParticleFactory")
+        p.factory.setLifespanBase(4.0)
+        p.factory.setLifespanSpread(1.0)
+        p.factory.setTerminalVelocityBase(12)
+        p.factory.setTerminalVelocitySpread(1)
+        p.factory.setMassBase(5)
+        p.factory.setMassSpread(2)
+
+        # emitter - child of baseParticleEmitter
+        p.setEmitter("SphereSurfaceEmitter")
+        # parent parameters
+        p.emitter.setEmissionType(p.emitter.ET_RADIATE)
+        # p.emitter.setExplicitLaunchVector(LVector3(0, 0, 1))
+        p.emitter.setRadiateOrigin(LPoint3(0,0,0))
+        p.emitter.setAmplitude(6)
+        p.emitter.setAmplitudeSpread(0)
+        # child parameters
+        p.emitter.setRadius(self.adisk_rad)
+        p.emitter.setOffsetForce(LPoint3(0,0,0))
+
+        # renderer - child of baseParticleRenderer
+        p.setRenderer("SpriteParticleRenderer")
+        # parent parameters
+        p.renderer.setAlphaMode(p.renderer.PR_ALPHA_OUT)
+        # child parameters
+        # sprite particle renderer
+        p.renderer.setTexture(loader.loadTexture('images/photon.png'))
+        # p.renderer.setColor(LColor(0.99,0.39,0,1))
+        p.renderer.setXScaleFlag(True)
+        p.renderer.setYScaleFlag(True)
+        p.renderer.setAnimAngleFlag(True)
+        # the y axis is scaled more to make particles look like horizontal rays
+        p.renderer.setInitialXScale(1e-3)
+        p.renderer.setFinalXScale(1e-4)
+        p.renderer.setInitialYScale(1e-4)
+        p.renderer.setFinalYScale(1e-5)
+
+        # line particle renderer
+        # p.renderer.setHeadColor(LColor(0.99, 0.39, 0, 1))
+        # p.renderer.setTailColor(LColor(0.99, 0.39, 0, 1))
+
+        # sparkle particle renderers
+        # p.renderer.setCenterColor(LColor(0.99,0.39,0,1))
+        # p.renderer.setEdgeColor(LColor(0,0,0,1))
+        # p.renderer.setBirthRadius(0.005)
+        # p.renderer.setDeathRadius(0.001)
+        # p.renderer.setLifeScale(p.renderer.SP_SCALE)
+
+        # point particle renderer
+        # p.renderer.setPointSize(100.0)
+        # p.renderer.setStartColor(LColor(0.99,0.39,0, 1))
+        # p.renderer.setEndColor(LColor(0.99,0.39, 0, 1))
+        # p.renderer.setBlendType(p.renderer.PP_BLEND_VEL)
+        # p.renderer.setBlendMethod(p.renderer.PP_BLEND_CUBIC)
+
+        # forces
+        fg = ForceGroup(f'{name} forces')
+        # gravitational force
+        force = LinearSinkForce()
+        force.setFalloffType(force.FT_ONE_OVER_R)
+        # relative to ?
+        force.setForceCenter(LPoint3(30,5,0))
+        force.setRadius(self.adisk_rad-1)
+        force.setMassDependent(True)
+        force.setAmplitude(8)
+
+        force.setActive(1)
+        fg.addForce(force)
+
+        # particle effect system
+        pe = ParticleEffect(f"{name} particle effect")
+        pe.addForceGroup(fg)
+        pe.addParticles(p)
+        pe.start(self.render)
+        pe.setPos(LPoint3(-20,-10,0))
+
 
     # def increasePoolSize(self):
     #     self.pool_size += 1000
@@ -384,12 +499,21 @@ class MyGame(ShowBase):
     #     self.createParticleSystem()
 
     # -- Update functions/tasks --
-    def spinCamera(self,task):
-        pass
+    def spinStar(self, task):
+        self.starNode.setH(self.starNode.getH()+10)
+        return task.cont
+
+    def addHoleMass(self, name, task):
+        self.pool_size += 500
+        self.accreationDiskZ("acc disk")
+        # self.pe.getParticlesNamed(name).setPoolSize(self.pool_size)
+        print(f'pool size = {self.pe.getParticlesNamed(name).getPoolSize()}')
+        return task.again
 
     def spinHole(self, task):
         # rotate hole smoothly
         self.HoleNodePath.setR(self.HoleNodePath.getR()+10)
         print(f"R = {self.HoleNodePath.getR()}")
         return task.cont
+
 

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Sun with 2K Textures
+* source:	https://sketchfab.com/3d-models/sun-with-2k-textures-bac9e8f95040484bb86f1deb9bd6fe95
+* author:	ayushcodemate (https://sketchfab.com/ayushcodemate)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Sun with 2K Textures" (https://sketchfab.com/3d-models/sun-with-2k-textures-bac9e8f95040484bb86f1deb9bd6fe95) by ayushcodemate (https://sketchfab.com/ayushcodemate) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
