@@ -41,13 +41,13 @@ class MyGame(ShowBase):
     def __init__(self):
         super().__init__()
         # attributes
-        self.bh_rad = 13
+        self.bh_rad = 5
         self.photon_rad = self.bh_rad + 0.1
         self.adisk_rad = self.bh_rad + 1
 
-        self.photon_thickness = 3
+        self.photon_thickness = 5
         self.position = LPoint3(25,-5,0)
-        self.pool_size = 3000
+        self.pool_size = 2000
         self.pe = ParticleEffect()
 
         # background
@@ -64,11 +64,10 @@ class MyGame(ShowBase):
         self.starParticles("star")
 
         # star
-        # star_path = os.path.join(os.getcwd(), "images/sun_with_2k_textures/scene.gltf").replace("\/\/","/")
         star_path = "panda3d_model/sun_with_2k_textures/scene.gltf"
         self.loadStar(star_path)
 
-        # camera
+        # camera viewing options
         # self.disableMouse()
         self.useDrive()
 
@@ -85,8 +84,6 @@ class MyGame(ShowBase):
 
         # some function may need to be run in parallel so need to create task chains
         # add tasks or updates
-        # self.taskMgr.add(funcOrTask=self.spinHole, name="spinHoleTask", taskChain=self.createTaskChains("spinHole"))
-
         # self.taskMgr.doMethodLater(delayTime=2,funcOrTask=self.addHoleMass, name="addHoleMass",
         #                            taskChain=self.createTaskChains("addHoleMass"), extraArgs=["acc disk particles"],
         #                            appendTask=True)
@@ -459,7 +456,7 @@ class MyGame(ShowBase):
 
         self.peSt = pe
 
-    # -- Help text functions --
+    ''' Help Text Methods '''
     # def increasePoolSize(self):
     #     self.pool_size += 1000
     #     print(f"Pool Size = {self.pool_size}")
@@ -620,7 +617,7 @@ class MyGame(ShowBase):
         self.peSt.getParticlesDict()['star particles'] = p
 
 
-    # -- Update functions/tasks --
+    ''' Update functions/tasks '''
     def spinStar(self, task):
         self.starNode.setH(self.starNode.getH()+0.25)
         return task.cont
