@@ -13,6 +13,7 @@ from direct.particles.ForceGroup import ForceGroup
 from panda3d.physics import LinearSinkForce, LinearVectorForce
 from panda3d.core import TextNode
 from direct.gui.OnscreenText import OnscreenText
+from direct.gui.OnscreenImage import OnscreenImage
 
 import os
 import sys
@@ -51,8 +52,10 @@ class MyGame(ShowBase):
         self.pe = ParticleEffect()
 
         # background
-        background_path = "images/stars.jpg"
-        self.setBackGroundColor(background_path)
+        background_path = "images/galaxy_background.jpg"
+        # self.setBackGroundColor(background_path)
+        self.loadBackground(background_path)
+
         # create basic aspects (singularity/shadow and ring)
         self.createBlackHole()
         self.createPhotonRing()
@@ -104,7 +107,33 @@ class MyGame(ShowBase):
         # card.setTexture(tex)
 
         self.setBackgroundColor(0,0,0,1)
+    
 
+    def loadBackground(self, imagepath):
+        ''' Load a background image behind the models '''
+
+        # We use a special trick of Panda3D: by default we have two 2D renderers: render2d and render2dp, the two being equivalent. We can then use render2d for front rendering (like modelName), and render2dp for background rendering.
+        self.background = OnscreenImage(parent=self.render2dp, image=imagepath) # Load an image object
+        # self.background.setScale(0.5,0.5,0.5)
+        self.background.setPos(0,0,0)
+        base.cam2dp.node().getDisplayRegion(0).setSort(-20) # Force the rendering to render the background image first (so that it will be put to the bottom of the scene since other models will be necessarily drawn on top)
+
+        # self.taskMgr.add(self.updateBackground, "update-background-task") 
+
+    # def updateBackground(self, task):
+        # ''' Update the background position based on the camera zoom (to follow 3D object) '''
+        # # Get the 3D object (cube) position and size
+        # obj_pos = self.cube.getPos(self.render)
+        # obj_scale = self.cube.getScale()
+
+        # # Set the background to always follow the object, but adjust its position and scale as needed
+        # self.background.setPos(obj_pos.x, obj_pos.y - 10, obj_pos.z)  # Keep the background behind the object
+
+        # # Scale the background with the zoom level
+        # zoom_level = base.cam.node().getLens().getFov()  # Get the current zoom level
+        # self.background.setScale(zoom_level * 2, 1, zoom_level * 2)  # Adjust the background size based on zoom level
+
+        # return task.cont
 
     def loadStar(self, name):
         # This work is based on "Sun with 2K Textures" (https://sketchfab.com/3d-models/sun-with-2k-textures-bac9e8f95040484bb86f1deb9bd6fe95) by ayushcodemate (https://sketchfab.com/ayushcodemate) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
@@ -626,8 +655,8 @@ class MyGame(ShowBase):
     def addHoleMass(self, name, task):
         self.pool_size += 500
         self.accreationDiskZ("acc disk")
-        # self.pe.getParticlesNamed(name).setPoolSize(self.pool_size)
-        print(f'pool size = {self.pe.getParticlesNamed(name).getPoolSize()}')
+        # self.pe.getParticlesNamed(name).setPoolSiz`e(self.pool_size)
+        # print(f'pool size = {self.pe.getParticlesNamed(name).getPoolSize()}')
         return task.again
 
 
