@@ -48,7 +48,7 @@ class MyGame(ShowBase):
 
         self.photon_thickness = 5
         self.position = LPoint3(25,-5,0)
-        self.pool_size = 2000
+        self.pool_size = 9000
         self.pe = ParticleEffect()
 
         # background
