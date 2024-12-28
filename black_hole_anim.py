@@ -140,7 +140,7 @@ class MyGame(ShowBase):
         star = self.loader.loadModel(name)
         star.setPos(-20,-10,-8)
         star.setScale(LVector3(30,30,30))
-        # star.setTexture(self.LoadTexture("panda3d_model/sun_with_2k_textures/textures/material_diffuse.png"))
+        # star.setTexture(self.loader.loadTexture("panda3d_model/sun_with_2k_textures/textures/material_diffuse.png"))
         star.reparentTo(self.render)
         # task manager
         self.taskMgr.add(funcOrTask=self.spinStar, name="spinStar", taskChain=self.createTaskChains("spinStar"))
@@ -548,7 +548,7 @@ class MyGame(ShowBase):
         # acc disk
         p = self.peZ.getParticlesNamed('acc disk particles')
         p.setRenderer('SpriteParticleRenderer')
-        p.renderer.setTexture(loader.loadTexture('images/steam.png'))
+        p.renderer.setTexture(self.loader.loadTexture('images/steam.png'))
         p.renderer.setColor(ccol)
         p.renderer.setXScaleFlag(True)
         p.renderer.setYScaleFlag(True)
@@ -563,7 +563,7 @@ class MyGame(ShowBase):
         # top disk
         p = self.peY.getParticlesNamed('top acc disk particles')
         p.setRenderer('SpriteParticleRenderer')
-        p.renderer.setTexture(loader.loadTexture('images/steam.png'))
+        p.renderer.setTexture(self.loader.loadTexture('images/steam.png'))
         p.renderer.setColor(ccol)
         p.renderer.setXScaleFlag(True)
         p.renderer.setYScaleFlag(True)
@@ -578,7 +578,7 @@ class MyGame(ShowBase):
         # star
         p = self.peSt.getParticlesNamed('star particles')
         p.setRenderer('SpriteParticleRenderer')
-        p.renderer.setTexture(loader.loadTexture('images/steam.png'))
+        p.renderer.setTexture(self.loader.loadTexture('images/steam.png'))
         p.renderer.setColor(ccol)
         p.renderer.setXScaleFlag(True)
         p.renderer.setYScaleFlag(True)
