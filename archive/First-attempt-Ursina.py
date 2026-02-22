@@ -1,8 +1,8 @@
-import ursina
+import archive
 import os
-from ursina import *
-from ursina import Mesh
-from ursina.scripts import merge_vertices
+from archive import *
+from archive import Mesh
+from archive.scripts import merge_vertices
 import numpy as np
 
 """ Script below creates an animation of a rotating black hole
