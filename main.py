@@ -1,9 +1,9 @@
-from black_hole_anim import MyGame
+from black_hole_anim import BlackHoleAnimation
 
 
 def main():
-    mygame = MyGame()
-    mygame.run()
+    app = BlackHoleAnimation()
+    app.run()
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ config_path = "config/conf.prc"
 loadPrcFile(config_path)
 
 
-class MyGame(ShowBase):
+class BlackHoleAnimation(ShowBase):
     """Black hole animation using Panda3D.
 
     Notes:
@@ -139,15 +139,31 @@ class MyGame(ShowBase):
             path: Path to the star GLTF model file.
         """
         star = self.loader.loadModel(path)
-        star.setPos(-20, -10, -8)
+
+        # Create a parent node to act as the rotation pivot point
+        star_pivot = self.render.attachNewNode("star_pivot")
+        star_pivot.setPos(-20, -10, 0)
+
+        # Attach the star to the pivot
+        star.reparentTo(star_pivot)
+
+        # Scale FIRST before calculating bounds
         star.setScale(LVector3(30, 30, 30))
-        star.reparentTo(self.render)
+
+        # Now center the star model on the pivot based on its scaled bounds
+        bounds = star.getTightBounds()
+        if bounds:
+            min_point, max_point = bounds
+            center = (min_point + max_point) / 2
+            star.setPos(-center)
+
         self.taskMgr.add(
             funcOrTask=self.spinStar,
             name="spinStar",
             taskChain=self.createTaskChains("spinStar"),
         )
-        self.starNode = star
+        # Store the pivot node so we rotate it instead of the star directly
+        self.starNode = star_pivot
 
     def createBlackHole(self):
         """Procedurally generate the black hole sphere and add it to the scene.
