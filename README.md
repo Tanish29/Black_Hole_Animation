@@ -133,8 +133,6 @@ The star model is based on [Sun with 2K Textures](https://sketchfab.com/3d-model
 - [Ursina](https://www.ursinaengine.org/) — Used in early prototypes
 
 ## Known Issues
-
-- **Texture Loading** — The star's texture may not load properly on some systems due to GLTF material handling
 - **Camera Zoom** — Initial camera position requires manual zoom-out to view the full scene
 
 ## Future Enhancements

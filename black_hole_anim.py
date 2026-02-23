@@ -79,7 +79,7 @@ class BlackHoleAnimation(ShowBase):
         # (https://sketchfab.com/3d-models/sun-with-2k-textures-bac9e8f95040484bb86f1deb9bd6fe95)
         # by ayushcodemate (https://sketchfab.com/ayushcodemate)
         # licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
-        star_path = "panda3d_model/sun_with_2k_textures/scene.gltf"
+        star_path = "star_model/source/Sun.glb"
         self.loadStar(star_path)
 
         # camera
