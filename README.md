@@ -6,6 +6,10 @@ A 3D black hole animation built with Python and Panda3D, featuring procedurally 
 ![Panda3D](https://img.shields.io/badge/Panda3D-1.10%2B-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## Demo
+
+[Video](animation_video.mp4)
+
 ## Overview
 
 This project demonstrates 3D graphics programming by creating a black hole animation entirely through code. Rather than relying on pre-made models, the black hole is constructed from primitive geometric shapes and enhanced with a sophisticated particle system to simulate the accretion disk and gravitational effects.
