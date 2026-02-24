@@ -7,8 +7,7 @@ A 3D black hole animation built with Python and Panda3D, featuring procedurally 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Demo
-
-[Video](animation_video.mp4)
+https://github.com/user-attachments/assets/290675ce-f4ad-457b-b993-6fe2567c548a
 
 ## Overview
 
